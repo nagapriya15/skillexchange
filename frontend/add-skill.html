@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Add Skill - Student Skill Exchange Platform">
+    <title>SkillExchange — Add Skill</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar"></nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Add a New Skill ➕</h1>
+        <p>Share a skill you can teach to other students</p>
+    </div>
+
+    <div class="card" style="max-width: 620px; margin: 0 auto;">
+        <form onsubmit="addSkill(event)">
+            <div class="form-group">
+                <label for="userId">Your User ID</label>
+                <input type="number" id="userId" class="form-control" placeholder="Enter your User ID" required>
+            </div>
+
+            <div class="form-group">
+                <label for="skillName">Skill Name</label>
+                <input type="text" id="skillName" class="form-control" placeholder="e.g. Java Programming, Guitar, Cooking" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" class="form-control" placeholder="Describe what you can teach and your experience level..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="addBtn">Add Skill →</button>
+        </form>
+    </div>
+
+    <!-- My Skills Section -->
+    <div style="max-width: 620px; margin: 2.5rem auto 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h2 style="font-size: 1.2rem; font-weight: 700;">📚 My Skills</h2>
+            <button class="btn btn-outline btn-sm" onclick="loadMySkills()">🔄 Refresh</button>
+        </div>
+        <div id="mySkillsList">
+            <div class="empty-state">
+                <div class="empty-icon">📚</div>
+                <h3 class="empty-title">No skills added yet</h3>
+                <p class="empty-subtitle">Add your first skill above and it will show up here!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    requireAuth();
+    buildNavbar('add-skill');
+
+    async function addSkill(e) {
+        e.preventDefault();
+        const btn = document.getElementById('addBtn');
+        btn.innerHTML = '<span class="spinner"></span> Adding...';
+        btn.disabled = true;
+
+        try {
+            await apiCall('/skills/add', 'POST', {
+                userId: parseInt(document.getElementById('userId').value),
+                skillName: document.getElementById('skillName').value,
+                description: document.getElementById('description').value
+            });
+            showToast('Skill added successfully! 🎉');
+            document.getElementById('skillName').value = '';
+            document.getElementById('description').value = '';
+            loadMySkills();
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.innerHTML = 'Add Skill →';
+            btn.disabled = false;
+        }
+    }
+
+    async function loadMySkills() {
+        const userId = document.getElementById('userId').value;
+        if (!userId) return;
+
+        // Show skeleton loading
+        showSkeleton('mySkillsList', 2, 'list');
+
+        try {
+            const skills = await apiCall('/skills/user/' + userId);
+            if (skills.length === 0) {
+                showEmptyState('mySkillsList', '📚', 'No skills added yet', 'Add your first skill above and it will show up here!');
+                return;
+            }
+            document.getElementById('mySkillsList').innerHTML = skills.map(s => `
+                <div class="skill-card" style="margin-bottom: 0.75rem;">
+                    <div class="skill-name">${escapeHtml(s.skillName)}</div>
+                    <div class="skill-desc">${escapeHtml(s.description || 'No description')}</div>
+                </div>
+            `).join('');
+        } catch (err) {
+            showEmptyState('mySkillsList', '⚠️', 'Could not load skills', 'Enter your User ID and click Refresh');
+        }
+    }
+</script>
+</body>
+</html>

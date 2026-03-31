@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Search Skills - Student Skill Exchange Platform">
+    <title>SkillExchange — Search Skills</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar"></nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Search Skills 🔍</h1>
+        <p>Find skills you want to learn from other students</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-bar" style="max-width: 640px; margin: 0 auto 2rem;">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search skills... (e.g. Python, Guitar, Math)">
+        <button class="btn btn-primary" onclick="searchSkills()" id="searchBtn">🔍 Search</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+        <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3 class="empty-title">Discover new skills</h3>
+            <p class="empty-subtitle">Search for any skill and find students who can teach you</p>
+        </div>
+    </div>
+
+    <!-- Send Request Modal -->
+    <div id="requestModal" class="modal-overlay">
+        <div class="card" style="max-width:420px; width:90%; animation: msgPop 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+            <h3 class="card-header">📩 Send Skill Request</h3>
+            <div class="form-group">
+                <label>Your User ID (Sender)</label>
+                <input type="number" id="modalSenderId" class="form-control" placeholder="Your User ID">
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.25rem; padding: 0.75rem; background: rgba(124,58,237,0.06); border-radius: var(--radius-xs); border: 1px solid rgba(124,58,237,0.12);">
+                Requesting: <strong id="modalSkillName" style="background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></strong><br>
+                From User ID: <strong id="modalReceiverId" style="color: var(--text-primary);"></strong>
+            </p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="confirmSendRequest()">Send Request →</button>
+                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    requireAuth();
+    buildNavbar('search');
+
+    let selectedSkill = null;
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchSkills();
+    });
+
+    async function searchSkills() {
+        const keyword = document.getElementById('searchInput').value.trim();
+        if (!keyword) {
+            showToast('Please enter a search term', 'error');
+            return;
+        }
+
+        // Show skeleton loading
+        showSkeleton('results', 4, 'card');
+
+        const btn = document.getElementById('searchBtn');
+        btn.innerHTML = '<span class="spinner"></span>';
+        btn.disabled = true;
+
+        try {
+            const skills = await apiCall('/skills/search?keyword=' + encodeURIComponent(keyword));
+            const container = document.getElementById('results');
+
+            if (skills.length === 0) {
+                showEmptyState('results', '🔍', 'No skills found', `No results for "${keyword}". Try a different search term!`);
+                return;
+            }
+
+            container.innerHTML = '<div class="card-grid">' + skills.map(s => `
+                <div class="skill-card">
+                    <div class="skill-name">${escapeHtml(s.skillName)}</div>
+                    <div class="skill-desc">${escapeHtml(s.description || 'No description provided')}</div>
+                    <div class="skill-user">👤 ${s.user ? escapeHtml(s.user.username) : 'Unknown'} (ID: ${s.user ? s.user.id : 'N/A'})</div>
+                    <button class="btn btn-success btn-sm" style="margin-top: 0.85rem;"
+                            onclick="openRequestModal(${s.id}, '${escapeHtml(s.skillName).replace(/'/g, "\\'")}', ${s.user ? s.user.id : 0})">
+                        📩 Send Request
+                    </button>
+                </div>
+            `).join('') + '</div>';
+        } catch (err) {
+            showToast(err.message, 'error');
+            showEmptyState('results', '⚠️', 'Something went wrong', err.message);
+        } finally {
+            btn.innerHTML = '🔍 Search';
+            btn.disabled = false;
+        }
+    }
+
+    function openRequestModal(skillId, skillName, receiverId) {
+        selectedSkill = { skillId, receiverId };
+        document.getElementById('modalSkillName').textContent = skillName;
+        document.getElementById('modalReceiverId').textContent = receiverId;
+        document.getElementById('requestModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('requestModal').style.display = 'none';
+    }
+
+    document.getElementById('requestModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    async function confirmSendRequest() {
+        const senderId = document.getElementById('modalSenderId').value;
+        if (!senderId) {
+            showToast('Please enter your User ID', 'error');
+            return;
+        }
+
+        try {
+            await apiCall('/requests/send', 'POST', {
+                senderId: parseInt(senderId),
+                receiverId: selectedSkill.receiverId,
+                skillId: selectedSkill.skillId
+            });
+            showToast('Request sent successfully! 🎉');
+            closeModal();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+</script>
+</body>
+</html>

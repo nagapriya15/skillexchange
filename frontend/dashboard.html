@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard - Student Skill Exchange Platform">
+    <title>SkillExchange — Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar"></nav>
+
+<div class="container container-wide">
+
+    <!-- Welcome Hero -->
+    <div class="welcome-hero" id="welcomeHero">
+        <span class="wave">👋</span>
+        <h1>Welcome back, <span class="name" id="userName">Student</span></h1>
+        <p>Explore skills, connect with peers, and grow together!</p>
+        <div class="welcome-stats">
+            <span class="stat-badge">🎯 Exchange Skills</span>
+            <span class="stat-badge">💡 Learn & Teach</span>
+            <span class="stat-badge">🤝 Connect</span>
+        </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="dashboard-grid">
+
+        <a href="add-skill.html" class="dash-card" id="addSkillCard">
+            <div class="icon-wrap">➕</div>
+            <h3>Add Skill</h3>
+            <p>Share a skill you can teach others</p>
+        </a>
+
+        <a href="search.html" class="dash-card" id="searchCard">
+            <div class="icon-wrap">🔍</div>
+            <h3>Search Skills</h3>
+            <p>Find skills you want to learn</p>
+        </a>
+
+        <a href="requests.html" class="dash-card" id="requestsCard">
+            <div class="icon-wrap">📋</div>
+            <h3>View Requests</h3>
+            <p>Manage exchange requests</p>
+        </a>
+
+        <a href="chat.html" class="dash-card" id="chatCard">
+            <div class="icon-wrap">💬</div>
+            <h3>Chat</h3>
+            <p>Message other students</p>
+        </a>
+
+        <a href="feedback.html" class="dash-card" id="feedbackCard">
+            <div class="icon-wrap">⭐</div>
+            <h3>Feedback</h3>
+            <p>Rate your exchange experience</p>
+        </a>
+
+        <div class="dash-card" id="profileCard" onclick="showProfile()">
+            <div class="icon-wrap">👤</div>
+            <h3>My Profile</h3>
+            <p>View your account details</p>
+        </div>
+
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    requireAuth();
+    buildNavbar('dashboard');
+
+    // Extract username from JWT token
+    (function loadUserName() {
+        const token = getToken();
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const email = payload.sub || '';
+                // Use the part before @ as a display name
+                const name = email.split('@')[0];
+                // Capitalize first letter
+                const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+                document.getElementById('userName').textContent = displayName;
+            } catch (e) {
+                // keep default "Student"
+            }
+        }
+    })();
+
+    function showProfile() {
+        const token = getToken();
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                showToast('Logged in as: ' + payload.sub);
+            } catch {
+                showToast('Could not read profile', 'error');
+            }
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Feedback - Student Skill Exchange Platform">
+    <title>SkillExchange — Feedback</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar"></nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Feedback ⭐</h1>
+        <p>Rate your skill exchange experience</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 920px; margin: 0 auto;">
+
+        <!-- Submit Feedback -->
+        <div class="card">
+            <h3 class="card-header">✍️ Submit Feedback</h3>
+            <form onsubmit="submitFeedback(event)">
+                <div class="form-group">
+                    <label for="userId">User ID (who you're rating)</label>
+                    <input type="number" id="userId" class="form-control" placeholder="Enter User ID" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Rating</label>
+                    <div class="stars" id="starRating">
+                        <span class="star" data-value="1" onclick="setRating(1)" onmouseover="previewRating(1)" onmouseout="resetPreview()">★</span>
+                        <span class="star" data-value="2" onclick="setRating(2)" onmouseover="previewRating(2)" onmouseout="resetPreview()">★</span>
+                        <span class="star" data-value="3" onclick="setRating(3)" onmouseover="previewRating(3)" onmouseout="resetPreview()">★</span>
+                        <span class="star" data-value="4" onclick="setRating(4)" onmouseover="previewRating(4)" onmouseout="resetPreview()">★</span>
+                        <span class="star" data-value="5" onclick="setRating(5)" onmouseover="previewRating(5)" onmouseout="resetPreview()">★</span>
+                    </div>
+                    <span id="ratingText" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="comment">Comment</label>
+                    <textarea id="comment" class="form-control" placeholder="Share your experience..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Submit Feedback →</button>
+            </form>
+        </div>
+
+        <!-- View Feedback -->
+        <div class="card">
+            <h3 class="card-header">📊 View Feedback</h3>
+            <div class="form-group">
+                <label for="viewUserId">Enter User ID</label>
+                <div class="search-bar" style="margin-bottom: 0;">
+                    <input type="number" id="viewUserId" class="form-control" placeholder="User ID">
+                    <button class="btn btn-outline" onclick="loadFeedback()">View</button>
+                </div>
+            </div>
+            <div id="feedbackList" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    requireAuth();
+    buildNavbar('feedback');
+
+    let selectedRating = 0;
+    const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
+    function setRating(value) {
+        selectedRating = value;
+        updateStars(value);
+        document.getElementById('ratingText').textContent = ratingLabels[value] + ' (' + value + '/5)';
+    }
+
+    function previewRating(value) {
+        updateStars(value);
+    }
+
+    function resetPreview() {
+        updateStars(selectedRating);
+    }
+
+    function updateStars(value) {
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, idx) => {
+            star.classList.toggle('filled', idx < value);
+        });
+    }
+
+    async function submitFeedback(e) {
+        e.preventDefault();
+
+        if (selectedRating === 0) {
+            showToast('Please select a rating', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.innerHTML = '<span class="spinner"></span> Submitting...';
+        btn.disabled = true;
+
+        try {
+            await apiCall('/feedback/add', 'POST', {
+                userId: parseInt(document.getElementById('userId').value),
+                rating: selectedRating,
+                comment: document.getElementById('comment').value
+            });
+            showToast('Feedback submitted! Thank you! 🎉');
+            setRating(0);
+            document.getElementById('ratingText').textContent = '';
+            document.getElementById('comment').value = '';
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            btn.innerHTML = 'Submit Feedback →';
+            btn.disabled = false;
+        }
+    }
+
+    async function loadFeedback() {
+        const userId = document.getElementById('viewUserId').value;
+        if (!userId) {
+            showToast('Please enter a User ID', 'error');
+            return;
+        }
+
+        const container = document.getElementById('feedbackList');
+        container.innerHTML = '<div style="text-align:center; padding:1rem;"><span class="spinner" style="border-color:var(--border); border-top-color:var(--accent);"></span></div>';
+
+        try {
+            const feedbacks = await apiCall('/feedback/user/' + userId);
+
+            if (feedbacks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="padding: 1.5rem;">
+                        <div class="icon">📭</div>
+                        <p>No feedback yet</p>
+                    </div>`;
+                return;
+            }
+
+            const avg = (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1);
+
+            container.innerHTML = `
+                <div style="text-align:center; margin-bottom:1rem; padding:1rem; background:rgba(255,165,2,0.08); border:1px solid rgba(255,165,2,0.15); border-radius:var(--radius-sm);">
+                    <div style="font-size:2rem; color:var(--warning); text-shadow: 0 0 15px rgba(255,165,2,0.3);">★ ${avg}</div>
+                    <div style="color:var(--text-muted); font-size:0.8rem; margin-top:0.25rem;">${feedbacks.length} review${feedbacks.length > 1 ? 's' : ''}</div>
+                </div>
+                ${feedbacks.map(f => `
+                    <div class="feedback-card" style="margin-bottom:0.6rem;">
+                        <div style="color:var(--warning); margin-bottom:0.3rem; font-size:1.1rem;">
+                            ${'★'.repeat(f.rating)}<span style="color:var(--text-muted);">${'★'.repeat(5 - f.rating)}</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.5;">
+                            ${f.comment || '<em style="color:var(--text-muted);">No comment</em>'}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        } catch (err) {
+            showToast(err.message, 'error');
+            container.innerHTML = '';
+        }
+    }
+</script>
+</body>
+</html>

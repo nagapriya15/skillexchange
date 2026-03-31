@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Skill Requests - Student Skill Exchange Platform">
+    <title>SkillExchange — Requests</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar"></nav>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Skill Requests 📋</h1>
+        <p>Manage incoming skill exchange requests</p>
+    </div>
+
+    <!-- User ID Input -->
+    <div class="search-bar" style="max-width: 500px; margin: 0 auto 2rem;">
+        <input type="number" id="userId" class="form-control" placeholder="Enter your User ID">
+        <button class="btn btn-primary" onclick="loadRequests()">Load Requests</button>
+    </div>
+
+    <!-- Requests List -->
+    <div id="requestsList">
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3 class="empty-title">Enter your User ID</h3>
+            <p class="empty-subtitle">Type your ID above and click "Load Requests" to see incoming exchange requests</p>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    requireAuth();
+    buildNavbar('requests');
+
+    async function loadRequests() {
+        const userId = document.getElementById('userId').value;
+        if (!userId) {
+            showToast('Please enter your User ID', 'error');
+            return;
+        }
+
+        // Show skeleton loading
+        showSkeleton('requestsList', 3, 'card');
+
+        try {
+            const requests = await apiCall('/requests/user/' + userId);
+
+            if (requests.length === 0) {
+                showEmptyState('requestsList', '📭', 'No requests yet', 'When someone wants to learn your skills, their requests will appear here.');
+                return;
+            }
+
+            document.getElementById('requestsList').innerHTML = '<div class="card-grid">' + requests.map(r => `
+                <div class="request-card">
+                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.6rem;">
+                        <div class="skill-name">${r.skill ? escapeHtml(r.skill.skillName) : 'Unknown Skill'}</div>
+                        <span class="request-status status-${r.status.toLowerCase()}">${r.status}</span>
+                    </div>
+                    <div class="skill-desc" style="margin-bottom:0.4rem;">
+                        👤 From: <strong style="color:var(--text-primary);">${r.sender ? escapeHtml(r.sender.username) : 'Unknown'}</strong>
+                        <span style="color:var(--text-muted);">(ID: ${r.sender ? r.sender.id : '?'})</span>
+                    </div>
+                    ${r.status === 'PENDING' ? `
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-sm" onclick="handleRequest(${r.id}, 'accept')">
+                                ✅ Accept
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="handleRequest(${r.id}, 'reject')">
+                                ❌ Reject
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('') + '</div>';
+        } catch (err) {
+            showToast(err.message, 'error');
+            showEmptyState('requestsList', '⚠️', 'Something went wrong', err.message);
+        }
+    }
+
+    async function handleRequest(requestId, action) {
+        try {
+            await apiCall(`/requests/${action}/${requestId}`, 'PUT');
+            showToast(`Request ${action}ed! 🎉`);
+            loadRequests();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+</script>
+</body>
+</html>

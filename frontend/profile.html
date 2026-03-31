@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Profile - Student Skill Exchange Platform">
+    <title>SkillExchange — Profile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar" id="navbar"></nav>
+
+<div class="container">
+    <div class="profile-container">
+
+        <!-- Profile Header -->
+        <div class="profile-header" id="profileHeader">
+            <div class="profile-avatar" id="profileAvatar">?</div>
+            <div class="profile-name" id="profileName">Loading...</div>
+            <div class="profile-email" id="profileEmail">—</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <span class="stat-value" id="skillCount">—</span>
+                <span class="stat-label">Skills</span>
+            </div>
+            <div class="profile-stat">
+                <span class="stat-value" id="requestCount">—</span>
+                <span class="stat-label">Requests</span>
+            </div>
+            <div class="profile-stat">
+                <span class="stat-value" id="feedbackCount">—</span>
+                <span class="stat-label">Reviews</span>
+            </div>
+        </div>
+
+        <!-- Account Info -->
+        <div class="profile-info-card">
+            <h3 class="card-header">📋 Account Details</h3>
+            <div class="profile-info-row">
+                <span class="label">Username</span>
+                <span class="value" id="infoUsername">—</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="label">Email</span>
+                <span class="value" id="infoEmail">—</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="label">Session Expires</span>
+                <span class="value" id="infoExpiry">—</span>
+            </div>
+            <div class="profile-info-row">
+                <span class="label">Status</span>
+                <span class="value"><span class="request-status status-accepted">Active</span></span>
+            </div>
+        </div>
+
+        <!-- My Skills -->
+        <div style="margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 700;">📚 My Skills</h3>
+                <span style="font-size: 0.8rem; color: var(--text-muted);" id="skillLabel">Enter User ID below</span>
+            </div>
+            <div class="form-group" style="max-width: 300px;">
+                <input type="number" id="userId" class="form-control" placeholder="Your User ID" onchange="loadProfileData()">
+            </div>
+            <div id="skillsList"></div>
+        </div>
+
+        <!-- Logout -->
+        <div style="text-align: center; margin-top: 2rem;">
+            <button class="btn btn-danger" onclick="logout()">↪ Logout</button>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    requireAuth();
+    buildNavbar('profile');
+
+    // Load basic info from JWT
+    const user = getCurrentUser();
+    if (user) {
+        document.getElementById('profileAvatar').textContent = user.initial;
+        document.getElementById('profileName').textContent = user.name;
+        document.getElementById('profileEmail').textContent = user.email;
+        document.getElementById('infoUsername').textContent = user.name;
+        document.getElementById('infoEmail').textContent = user.email;
+        document.getElementById('infoExpiry').textContent = user.exp.toLocaleString();
+    }
+
+    async function loadProfileData() {
+        const userId = document.getElementById('userId').value;
+        if (!userId) return;
+
+        // Load skills count
+        try {
+            const skills = await apiCall('/skills/user/' + userId);
+            document.getElementById('skillCount').textContent = skills.length;
+            document.getElementById('skillLabel').textContent = skills.length + ' skill(s) found';
+
+            if (skills.length === 0) {
+                showEmptyState('skillsList', '📚', 'No skills yet', 'Add your first skill from the Add Skill page!');
+            } else {
+                document.getElementById('skillsList').innerHTML = skills.map(s => `
+                    <div class="skill-card" style="margin-bottom: 0.6rem;">
+                        <div class="skill-name">${escapeHtml(s.skillName)}</div>
+                        <div class="skill-desc">${escapeHtml(s.description || 'No description')}</div>
+                    </div>
+                `).join('');
+            }
+        } catch (err) {
+            document.getElementById('skillCount').textContent = '0';
+            showEmptyState('skillsList', '⚠️', 'Could not load skills', err.message);
+        }
+
+        // Load requests count
+        try {
+            const requests = await apiCall('/requests/user/' + userId);
+            document.getElementById('requestCount').textContent = requests.length;
+        } catch {
+            document.getElementById('requestCount').textContent = '0';
+        }
+
+        // Load feedback count
+        try {
+            const feedbacks = await apiCall('/feedback/user/' + userId);
+            document.getElementById('feedbackCount').textContent = feedbacks.length;
+        } catch {
+            document.getElementById('feedbackCount').textContent = '0';
+        }
+    }
+</script>
+</body>
+</html>
