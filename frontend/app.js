@@ -2,7 +2,7 @@
    app.js - Shared utilities for the Skill Exchange Platform
    =================================================================== */
 
-const API_BASE = 'http://localhost:8081/api';
+const API_BASE = 'https://skillexchange-1-6m3j.onrender.com';
 
 // ── Token Management ──
 
