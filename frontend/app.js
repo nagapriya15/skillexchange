@@ -35,10 +35,7 @@ function isTokenExpired() {
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const expiry = payload.exp * 1000; // convert to ms
-        if (Date.now() >= expiry) {
-            return true;
-        }
-        return false;
+        return Date.now() >= expiry;
     } catch (e) {
         return true; // malformed token
     }
@@ -50,13 +47,14 @@ function isTokenExpired() {
  */
 function requireAuth() {
     const token = getToken();
+
     if (!token) {
         window.location.href = 'index.html';
         return;
     }
+
     if (isTokenExpired()) {
         removeToken();
-        // Use sessionStorage to show message after redirect
         sessionStorage.setItem('session_expired', 'true');
         window.location.href = 'index.html';
         return;
@@ -85,6 +83,7 @@ function getCurrentUser() {
         const email = payload.sub || '';
         const name = email.split('@')[0];
         const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+
         return {
             email: email,
             name: displayName,
@@ -101,11 +100,13 @@ function getCurrentUser() {
 async function apiCall(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
     const token = getToken();
+
     if (token) {
         headers['Authorization'] = 'Bearer ' + token;
     }
 
     const options = { method, headers };
+
     if (body) {
         options.body = JSON.stringify(body);
     }
@@ -113,9 +114,8 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     try {
         const response = await fetch(API_BASE + endpoint, options);
 
-        // Handle 401/403 — session expired or invalid token
-        if (response.status === 401 || response.status === 403) {
-            // Could be expired token
+        // Only treat 401/403 as session problems if a token already exists
+        if ((response.status === 401 || response.status === 403) && token) {
             if (isTokenExpired()) {
                 removeToken();
                 sessionStorage.setItem('session_expired', 'true');
@@ -124,7 +124,15 @@ async function apiCall(endpoint, method = 'GET', body = null) {
             }
         }
 
-        const data = await response.json();
+        let data = {};
+        const contentType = response.headers.get('content-type') || '';
+
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = { message: text };
+        }
 
         if (!response.ok) {
             throw new Error(data.error || data.message || 'Something went wrong');
