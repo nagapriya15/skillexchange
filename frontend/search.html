@@ -17,13 +17,11 @@
         <p>Find skills you want to learn from other students</p>
     </div>
 
-    <!-- Search Bar -->
     <div class="search-bar" style="max-width: 640px; margin: 0 auto 2rem;">
         <input type="text" id="searchInput" class="form-control" placeholder="Search skills... (e.g. Python, Guitar, Math)">
         <button class="btn btn-primary" onclick="searchSkills()" id="searchBtn">🔍 Search</button>
     </div>
 
-    <!-- Results -->
     <div id="results">
         <div class="empty-state">
             <div class="empty-icon">🔍</div>
@@ -32,7 +30,6 @@
         </div>
     </div>
 
-    <!-- Send Request Modal -->
     <div id="requestModal" class="modal-overlay">
         <div class="card" style="max-width:420px; width:90%; animation: msgPop 0.3s cubic-bezier(0.34,1.56,0.64,1);">
             <h3 class="card-header">📩 Send Skill Request</h3>
@@ -70,7 +67,6 @@
             return;
         }
 
-        // Show skeleton loading
         showSkeleton('results', 4, 'card');
 
         const btn = document.getElementById('searchBtn');
@@ -78,7 +74,7 @@
         btn.disabled = true;
 
         try {
-            const skills = await apiCall('/skills/search?keyword=' + encodeURIComponent(keyword));
+            const skills = await apiCall('/api/skills/search?keyword=' + encodeURIComponent(keyword));
             const container = document.getElementById('results');
 
             if (skills.length === 0) {
@@ -129,7 +125,7 @@
         }
 
         try {
-            await apiCall('/requests/send', 'POST', {
+            await apiCall('/api/requests/send', 'POST', {
                 senderId: parseInt(senderId),
                 receiverId: selectedSkill.receiverId,
                 skillId: selectedSkill.skillId

@@ -18,8 +18,6 @@
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; max-width: 920px; margin: 0 auto;">
-
-        <!-- Submit Feedback -->
         <div class="card">
             <h3 class="card-header">✍️ Submit Feedback</h3>
             <form onsubmit="submitFeedback(event)">
@@ -49,7 +47,6 @@
             </form>
         </div>
 
-        <!-- View Feedback -->
         <div class="card">
             <h3 class="card-header">📊 View Feedback</h3>
             <div class="form-group">
@@ -106,13 +103,14 @@
         btn.disabled = true;
 
         try {
-            await apiCall('/feedback/add', 'POST', {
+            await apiCall('/api/feedback/add', 'POST', {
                 userId: parseInt(document.getElementById('userId').value),
                 rating: selectedRating,
                 comment: document.getElementById('comment').value
             });
             showToast('Feedback submitted! Thank you! 🎉');
-            setRating(0);
+            selectedRating = 0;
+            updateStars(0);
             document.getElementById('ratingText').textContent = '';
             document.getElementById('comment').value = '';
         } catch (err) {
@@ -134,7 +132,7 @@
         container.innerHTML = '<div style="text-align:center; padding:1rem;"><span class="spinner" style="border-color:var(--border); border-top-color:var(--accent);"></span></div>';
 
         try {
-            const feedbacks = await apiCall('/feedback/user/' + userId);
+            const feedbacks = await apiCall('/api/feedback/user/' + userId);
 
             if (feedbacks.length === 0) {
                 container.innerHTML = `

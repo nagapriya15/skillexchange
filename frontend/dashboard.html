@@ -12,8 +12,6 @@
 <nav class="navbar" id="navbar"></nav>
 
 <div class="container container-wide">
-
-    <!-- Welcome Hero -->
     <div class="welcome-hero" id="welcomeHero">
         <span class="wave">👋</span>
         <h1>Welcome back, <span class="name" id="userName">Student</span></h1>
@@ -25,9 +23,7 @@
         </div>
     </div>
 
-    <!-- Dashboard Cards -->
     <div class="dashboard-grid">
-
         <a href="add-skill.html" class="dash-card" id="addSkillCard">
             <div class="icon-wrap">➕</div>
             <h3>Add Skill</h3>
@@ -63,7 +59,6 @@
             <h3>My Profile</h3>
             <p>View your account details</p>
         </div>
-
     </div>
 </div>
 
@@ -72,20 +67,16 @@
     requireAuth();
     buildNavbar('dashboard');
 
-    // Extract username from JWT token
     (function loadUserName() {
         const token = getToken();
         if (token) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 const email = payload.sub || '';
-                // Use the part before @ as a display name
                 const name = email.split('@')[0];
-                // Capitalize first letter
                 const displayName = name.charAt(0).toUpperCase() + name.slice(1);
                 document.getElementById('userName').textContent = displayName;
             } catch (e) {
-                // keep default "Student"
             }
         }
     })();

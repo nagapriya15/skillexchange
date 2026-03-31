@@ -38,7 +38,6 @@
         </form>
     </div>
 
-    <!-- My Skills Section -->
     <div style="max-width: 620px; margin: 2.5rem auto 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
             <h2 style="font-size: 1.2rem; font-weight: 700;">📚 My Skills</h2>
@@ -66,11 +65,12 @@
         btn.disabled = true;
 
         try {
-            await apiCall('/skills/add', 'POST', {
+            await apiCall('/api/skills/add', 'POST', {
                 userId: parseInt(document.getElementById('userId').value),
                 skillName: document.getElementById('skillName').value,
                 description: document.getElementById('description').value
             });
+
             showToast('Skill added successfully! 🎉');
             document.getElementById('skillName').value = '';
             document.getElementById('description').value = '';
@@ -87,15 +87,16 @@
         const userId = document.getElementById('userId').value;
         if (!userId) return;
 
-        // Show skeleton loading
         showSkeleton('mySkillsList', 2, 'list');
 
         try {
-            const skills = await apiCall('/skills/user/' + userId);
+            const skills = await apiCall('/api/skills/user/' + userId);
+
             if (skills.length === 0) {
                 showEmptyState('mySkillsList', '📚', 'No skills added yet', 'Add your first skill above and it will show up here!');
                 return;
             }
+
             document.getElementById('mySkillsList').innerHTML = skills.map(s => `
                 <div class="skill-card" style="margin-bottom: 0.75rem;">
                     <div class="skill-name">${escapeHtml(s.skillName)}</div>
