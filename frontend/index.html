@@ -14,18 +14,15 @@
         <h1>⚡ SkillExchange</h1>
         <p class="subtitle">Exchange skills, grow together</p>
 
-        <!-- Session Expired Message (hidden by default) -->
         <div id="sessionMsg" style="display:none; text-align:center; padding:0.75rem; margin-bottom:1.25rem; background:rgba(255,165,2,0.1); border:1px solid rgba(255,165,2,0.2); border-radius:var(--radius-xs); color:var(--warning); font-size:0.85rem;">
             ⏰ Session expired. Please login again.
         </div>
 
-        <!-- Tabs: Login / Register -->
         <div class="auth-tabs">
             <button class="auth-tab active" id="loginTab" onclick="showLogin()">Login</button>
             <button class="auth-tab" id="registerTab" onclick="showRegister()">Register</button>
         </div>
 
-        <!-- Login Form -->
         <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
                 <label for="loginEmail">Email</label>
@@ -38,7 +35,6 @@
             <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Login →</button>
         </form>
 
-        <!-- Register Form (hidden by default) -->
         <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
             <div class="form-group">
                 <label for="regUsername">Username</label>
@@ -59,12 +55,10 @@
 
 <script src="app.js"></script>
 <script>
-    // If already logged in and token is valid, go to dashboard
     if (getToken() && !isTokenExpired()) {
         window.location.href = 'dashboard.html';
     }
 
-    // Show session expired message if redirected due to expiry
     if (sessionStorage.getItem('session_expired') === 'true') {
         document.getElementById('sessionMsg').style.display = 'block';
         sessionStorage.removeItem('session_expired');
@@ -86,19 +80,25 @@
 
     async function handleLogin(e) {
         e.preventDefault();
+
         const btn = document.getElementById('loginBtn');
         btn.innerHTML = '<span class="spinner"></span> Logging in...';
         btn.disabled = true;
 
         try {
-            const data = await apiCall('/auth/login', 'POST', {
+            const data = await apiCall('/api/auth/login', 'POST', {
                 email: document.getElementById('loginEmail').value,
                 password: document.getElementById('loginPassword').value
             });
+
             setToken(data.token);
             document.getElementById('sessionMsg').style.display = 'none';
             showToast('Login successful! Redirecting...');
-            setTimeout(() => window.location.href = 'dashboard.html', 800);
+
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 800);
+
         } catch (err) {
             showToast(err.message, 'error');
             btn.innerHTML = 'Login →';
@@ -108,19 +108,22 @@
 
     async function handleRegister(e) {
         e.preventDefault();
+
         const btn = document.getElementById('regBtn');
         btn.innerHTML = '<span class="spinner"></span> Creating...';
         btn.disabled = true;
 
         try {
-            await apiCall('/auth/register', 'POST', {
+            await apiCall('/api/auth/register', 'POST', {
                 username: document.getElementById('regUsername').value,
                 email: document.getElementById('regEmail').value,
                 password: document.getElementById('regPassword').value
             });
+
             showToast('Account created! Please login.');
             showLogin();
             document.getElementById('loginEmail').value = document.getElementById('regEmail').value;
+
         } catch (err) {
             showToast(err.message, 'error');
         } finally {
